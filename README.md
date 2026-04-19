@@ -4,9 +4,10 @@ Demonstration of using Ansible for provisioning MapAction laptops.
 
 ## Aim
 
-A standalone, demonstration of the using Ansible to provision a single Windows laptop.
+A standalone demonstration of using Ansible to provision a Windows laptop for use in MapAction.
 
-Created for @felnne to verify Ansible approach will work and what is needed in terms of pre-provisioning configuration.
+Created by @felnne to check Ansible is a viable option for provisioning and what is needed in terms of pre-provisioning
+configuration.
 
 Intended to implement parts of the minimal workflow needed to provision a MapAction laptop as set out in
 [Confluence](https://mapaction.atlassian.net/wiki/spaces/missions/pages/18013814785/2026-Global-Server-Status-and-Laptop-Provisioning-Current-Status-Milestones#Milestones)
@@ -21,7 +22,7 @@ Ansible generally works.
 
 ## Progress
 
-Agaist provisioning project 
+Against provisioning project 
 [Milestones](https://mapaction.atlassian.net/wiki/spaces/missions/pages/18013814785/2026-Global-Server-Status-and-Laptop-Provisioning-Current-Status-Milestones#Milestones):
 
 - [ ] can install Windows via standard installer and minimally configure
@@ -29,12 +30,12 @@ Agaist provisioning project
 - ~~can ping a laptop based on this static address~~
 - [x] can ping a laptop via Ansible ~~based on this static address~~
 - [x] can run a simple task within an Ansible playbook (creating a text file on the desktop)
-- [ ] can install simple software such as VLC
+- [x] can install simple software such as ~~VLC~~ VS Code
 - [ ] can install more complex software such as ArcGIS Pro with the MA toolbar
 
 > [!NOTE]
 >
-> In this demonstration/experiment, a single laptop is targetted without a network using DHCP registration.
+> In this demonstration/experiment, a single laptop is targeted without a network using DHCP registration.
 >
 > Consequently, the DHCP and static address elements of the provisioning project milestones are ignored.
 
@@ -42,46 +43,76 @@ Additional progress:
 
 - [x] `ping` can generically connect to a remote Windows machine
   - requires enabling Windows firewall rule
+- [x] ruled out needing PowerShell v7, default v5 is fine
+- [x] automated patching OpenSSH config to enable admin users to use password auth
+- software as per https://mapaction.atlassian.net/wiki/spaces/techcircle/database/17848893459:
+  - Windows (implicit)
+  - [ ] ArcPro [3.4.2]
+  - [x] QGIS [3.44]
+  - [x] Adobe Reader
+  - [ ] Google Chrome - disabled, checksum error on install
+  - [x] Firefox
+  - [x] PDFsam
+  - [x] NextCloud Client
+  - [x] VLC
+  - [x] 7Zip
+  - [x] Slack
+  - [x] Google Earth Pro
+  - [x] NotePad++
+  - [x] VS Code
+  - [ ] (.Net 8)
+  - [x] Google Drive
+  - [x] WinDirStat
+  - [x] InkScape
+  - [x] GIMP
+  - [x] Power BI Desktop
+  - [ ] MS Office
+  - [ ] MapAction Toolbar
+  - [ ] Python - skipped to clarify need
+  - [ ] MS Teams
+  - [x] Signal
+- fonts as per ...
+  - [ ] OCHA Humanitarian Icons
+  - [ ] Roboto
+  - [ ] FontAwesome
+- other as per ...
+  - [ ] printer drivers
 
 ## Usage
 
+### Overview
+
+1. install Windows with a conventional MapAction admin user account (first run only)
+2. enable SSH access for Ansible to connect to machine (first run only)
+3. rin Ansible playbook to install software
+
+### Setup Windows
+
+> [!NOTE]
+>
+> These steps were developed using an existing MA configured laptop 
+> [Reset](https://support.microsoft.com/en-us/windows/reset-your-pc-0ef73740-b927-549b-b7c9-e6f2b48d275e) to its 
+> original state. 
+>
+> Whilst this is not the same as a full reinstallation, it's good enough for this demonstration.
+
+Configure a machine to run Windows:
+
+1. install Windows 11
+2. when asked, name the machine based on its assigned label (e.g. `MA-LAPTOP60`)
+3. when asked, create a `Mapaction` local account (choose work computer and domain joined)
+
 ### Bootstrap Windows
 
-Configure a Windows machine for configuration by Ansible:
+Configure a machine with Windows installed for access by Ansible:
 
-1. install latest PowerShell version (minimum 7.0) - https://github.com/PowerShell/PowerShell/releases
-2. copy and run `boostrap-windows.ps1` PowerShell script [1] from a privilged (in-built) PowerShell session
-3. configure SSH Server config [2]
+1. copy the `bootstrap.ps1` PowerShell script to the desktop
+2. run the script from a privileged PowerShell session [1]
 
 [1]
 
 ```shell
-> powershell -NoProfile -ExecutionPolicy Bypass -File .\Desktop\ansible-ssh.ps1
-```
-
-[2]
-
-In `C:\ProgramData\ssh\sshd_config`, change:
-
-```
-#PermitRootLogin prohibit-password
-
-...
-
-Match Group administrators
-       AuthorizedKeysFile __PROGRAMDATA__/ssh/administrators_authorized_keys
-```
-
-To:
-
-```
-PermitRootLogin yes
-
-...
-
-Match Group administrators
-       AuthorizedKeysFile __PROGRAMDATA__/ssh/administrators_authorized_keys
-       PasswordAuthentication yes
+> powershell -NoProfile -ExecutionPolicy Bypass -File C:\Users\Mapaction\Desktop\bootstrap.ps1
 ```
 
 ### Run Ansible provisioning
@@ -90,6 +121,13 @@ Match Group administrators
 % source .venv/bin/activate
 % ansible-playbook playbook.yml
 ```
+
+> [!NOTE]
+> Running the playbook is not quick!
+
+## Implementation
+
+...
 
 ## Setup
 
@@ -103,6 +141,7 @@ I.e. Setup needed to run this project, on a machine Ansible will be run from.
 
 ```shell
 % brew install uv git
+% git clone https://github.com/felnne/ma-ansible-laptops.git
 % cd ma-ansible-laptops/
 % uv sync
 ```
@@ -111,7 +150,7 @@ I.e. Setup needed to run this project, on a machine Ansible will be run from.
 
 ### Troubleshoot Ansible
 
-```
+```text
 % ansible laptops -m win_ping
 192.168.122.141 | SUCCESS => {
     "changed": false,
@@ -133,7 +172,7 @@ Checks Ansible can connect to all machines in the *laptops* inventory group via 
 Verifies network connectivity, SSH service and authentication.
 
 > [!NOTE]
-> Replace `192.168.122.141` with IP or DHCP hostname.
+> Replace `192.168.122.141` with an IP or DHCP hostname.
 
 > [!TIP]
 > `-o PreferredAuthentications=password` and `-o PubkeyAuthentication=no` options are set to guard against any public
@@ -141,15 +180,7 @@ Verifies network connectivity, SSH service and authentication.
 >
 > Depending on the SSH config of your control machine, this may not be necessary (but won't hurt).
 
-If needed, you can check the default shell version with:
-
-```shell
-% ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no Mapaction@192.168.122.141 '$PSVersionTable.PSVersion'
-```
-
-The minimum correct version is _7.x_. A version of _5.x_ (the default installed with Windows) is not supported.
-
-### Troubleshoot windows firewall
+### Troubleshoot Windows Firewall
 
 ```shell
 # disable firewall
