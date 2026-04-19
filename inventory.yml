@@ -1,0 +1,16 @@
+all:
+  children:
+    Laptops:
+      vars:
+        ansible_connection: ssh
+        ansible_shell_type: powershell
+        ansible_user: Mapaction
+        ansible_password: xxx
+        ansible_ssh_common_args: "-o PreferredAuthentications=password -o PubkeyAuthentication=no"
+      children:
+        Field:
+          hosts:
+            MA-LAPTOP60:
+              ansible_host: 192.168.122.141  # to fake DHCP resolution
+        Office:
+          hosts: {}

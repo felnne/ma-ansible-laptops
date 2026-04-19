@@ -1,0 +1,9 @@
+[project]
+name = "ma-ansible-laptops"
+version = "0.1.0"
+description = "Demonstration of using Ansible for provisioning MapAction laptops."
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "ansible>=13.5.0",
+]
