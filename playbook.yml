@@ -1,13 +1,77 @@
-- name: Create file on Windows desktop
+- name: Provision laptop
   hosts: Laptops
   gather_facts: no
   tasks:
-    - name: Ensure Desktop directory exists
-      ansible.windows.win_file:
-        path: "C:\\Users\\{{ ansible_user }}\\Desktop"
-        state: directory
-
-    - name: Create file from a template
-      ansible.windows.win_template:
-        src: hello.txt.j2
-        dest: "C:\\Users\\{{ ansible_user }}\\Desktop\\hello.txt"
+    - name: Install QGIS geospatial editor 
+      chocolatey.chocolatey.win_chocolatey:
+        name: qgis-ltr
+        state: present
+        version: 3.44.9
+    - name: Install Adobe Reader PDF viewer
+      chocolatey.chocolatey.win_chocolatey:
+        name: adobereader
+        state: present
+    # - name: Install Chrome web browser
+    #   chocolatey.chocolatey.win_chocolatey:
+    #     name: googleChrome
+    #     state: present
+    - name: Install Firefox web browser
+      chocolatey.chocolatey.win_chocolatey:
+        name: Firefox
+        state: present
+    - name: Install PDFsam PDF editing tool
+      chocolatey.chocolatey.win_chocolatey:
+        name: pdfsam
+        state: present
+    - name: Install Nextcloud file sync client
+      chocolatey.chocolatey.win_chocolatey:
+        name: nextcloud-client
+        state: present
+    - name: Install VLC media player
+      chocolatey.chocolatey.win_chocolatey:
+        name: vlc
+        state: present
+    - name: Install 7-Zip file archiver
+      chocolatey.chocolatey.win_chocolatey:
+        name: 7zip
+        state: present
+    - name: Install Slack messenger
+      chocolatey.chocolatey.win_chocolatey:
+        name: slack
+        state: present
+    - name: Install Google Earth Pro geospatial viewer 
+      chocolatey.chocolatey.win_chocolatey:
+        name: googleearthpro
+        state: present
+    - name: Install Notepad++ text editor
+      chocolatey.chocolatey.win_chocolatey:
+        name: notepadplusplus
+        state: present
+    - name: Install VSCode code editor
+      chocolatey.chocolatey.win_chocolatey:
+        name: vscode
+        state: present
+    - name: Install Google Drive file sync client
+      chocolatey.chocolatey.win_chocolatey:
+        name: googledrive
+        state: present
+    - name: Install WinDirStat disk usage analyser
+      chocolatey.chocolatey.win_chocolatey:
+        name: windirstat
+        state: present
+    - name: Install InkScape vector graphics editor
+      chocolatey.chocolatey.win_chocolatey:
+        name: inkscape
+        state: present
+    - name: Install GIMP raster graphics editor
+      chocolatey.chocolatey.win_chocolatey:
+        name: gimp
+        state: present
+    - name: Install PowerBI editor
+      chocolatey.chocolatey.win_chocolatey:
+        name: powerbi
+        state: present
+    - name: Install Signal messenger
+      chocolatey.chocolatey.win_chocolatey:
+        name: signal
+        state: present
