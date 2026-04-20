@@ -112,7 +112,7 @@ Configure a machine with Windows installed for access by Ansible:
 [1]
 
 ```shell
-> powershell -NoProfile -ExecutionPolicy Bypass -File C:\Users\Mapaction\Desktop\bootstrap.ps1
+> Set-ExecutionPolicy Bypass -File C:\Users\Mapaction\Desktop\bootstrap.ps1
 ```
 
 ### Run Ansible provisioning
