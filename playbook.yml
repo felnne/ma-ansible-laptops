@@ -1,7 +1,100 @@
 - name: Provision laptop
   hosts: Laptops
   gather_facts: no
+  vars:
+    software_packages_endpoint: "xxx/software"
+
+    arcgis_store: "C:\\MA_PROVISIONING\\ArcGISPro"
+    arcgis_exe: "{{ arcgis_store }}\\installer.exe"
+    arcgis_msi: '{{ arcgis_store }}\ArcGIS Pro 3.4\ArcGISPro\ArcGISPro.msi'
+    arcgis_patch_1: "ArcGIS_Pro_341_192917.msp"
+    arcgis_patch_2: "ArcGIS_Pro_342_192916.msp"
+    arcgis_toolbar: "MapActionToolbars_3_4_2_5.esriAddinX"
+    arcgis_add_ins_path: "{{ arcgis_store }}\\add-ins"
+    arcgis_base: "C:\\Program Files\\ArcGIS\\Pro"
+    arcgis_conda: "{{ arcgis_base }}\\bin\\Python\\Scripts\\conda.exe"
+    arcgis_env_utils: "{{ arcgis_base }}\\bin\\PythonEnvUtils.exe"
+    arcgis_env_base: "arcgispro-py3"
+    arcgis_env_ma: "mapaction-arc-py3"
+
   tasks:
+    - name: Install .Net desktop runtime for ArcGIS Pro
+      chocolatey.chocolatey.win_chocolatey:
+        name: dotnet-8.0-desktopruntime
+        state: present
+
+    - name: Create ArcGIS Pro install directory
+      win_file:
+        path: "{{ arcgis_store }}"
+        state: directory
+    - name: Download ArcGIS Pro installer (slow)
+      win_get_url:
+        url: "{{ software_packages_endpoint }}/arcgis-pro/3.4.2/ArcGISPro_34_192912.exe"
+        dest: "{{ arcgis_exe }}"
+        checksum: "228fba5c8b82aafdd2444b0cfc48a51aaa6cb7b7"
+        force: false
+    - name: Extract ArcGIS Pro installer
+      win_command: '{{ arcgis_exe }} /s /d {{ arcgis_store }}'
+      args:
+        creates: '{{ arcgis_msi }}'
+    - name: Install ArcGIS Pro geospatial editor (slow)
+      win_package:
+        path: '{{ arcgis_msi }}'
+        arguments: 'ALLUSERS=1 ACCEPTEULA=YES ADDLOCAL=SemanticSearch,ToolSuggestions BLOCKADDINS=0 CHECKFORUPDATESATSTARTUP=0 SOFTWARE_CLASS=Professional'
+        state: present
+    - name: Download ArcGIS Pro patch 1
+      win_get_url:
+        url: "{{ software_packages_endpoint }}/arcgis-pro/3.4.2/{{ arcgis_patch_1 }}"
+        dest: "{{ arcgis_store }}\\{{ arcgis_patch_1 }}"
+        checksum: "1d80c908125efdd241dfc454f3fd101a83820425"
+        force: false
+    - name: Install ArcGIS Pro patch 1
+      win_package:
+        path: '{{ arcgis_store }}\\{{ arcgis_patch_1 }}'
+        arguments: 'REINSTALLMODE=omus REINSTALL=ALL'
+        state: present
+    - name: Download ArcGIS Pro patch 2
+      win_get_url:
+        url: "{{ software_packages_endpoint }}/arcgis-pro/3.4.2/{{ arcgis_patch_2 }}"
+        dest: "{{ arcgis_store }}\\{{ arcgis_patch_2 }}"
+        checksum: "b46f5df75dfaaba43d6340f06f3fb1a9aee2ed5c"
+        force: false
+    - name: Install ArcGIS Pro patch 2
+      win_package:
+        path: '{{ arcgis_store }}\\{{ arcgis_patch_2 }}'
+        arguments: 'REINSTALLMODE=omus REINSTALL=ALL'
+        state: present
+    - name: Create ArcGIS Pro add-ins directory
+      win_file:
+        path: "{{ arcgis_add_ins_path }}"
+        state: directory
+    - name: Download MapAction toolbar ArcGIS Pro add-in
+      win_get_url:
+        url: "{{ software_packages_endpoint }}/mapaction-toolbar-arcgis-pro/3.4.2.5/{{ arcgis_toolbar }}"
+        dest: "{{ arcgis_add_ins_path }}\\{{ arcgis_toolbar }}"
+        checksum: "782dada04b9a415f69f5564a067b75a763814143"
+        force: false
+    - name: Set ArcGIS Pro add-ins search path
+      win_regedit:
+        path: "HKCU:\\Software\\ESRI\\ArcGISPro\\Settings\\Add-In Folders"
+        name: "{{ arcgis_add_ins_path }}"
+        state: present
+    - name: Create MapAction ArcGIS Pro conda environment (slow)
+      win_command: '"{{ arcgis_conda }}" create -n {{ arcgis_env_ma }} --yes --clone {{ arcgis_env_base }}'
+      args:
+        creates: '{{ arcgis_base }}\\bin\\Python\\envs\\{{ arcgis_env_ma }}'
+    - name: Get active ArcGIS Pro conda environment
+      win_command: '"{{ arcgis_env_utils }}"'
+      register: arcgis_active_env
+      changed_when: false
+    - name: Switch ArcGIS Pro conda environment to MapAction
+      win_command: '"{{ arcgis_conda }}" proswap -n {{ arcgis_env_ma }}'
+      when: arcgis_env_ma not in arcgis_active_env.stdout
+    - name: Install GeoPandas into MapAction ArcGIS Pro conda environment (slow)
+      win_command: '"{{ arcgis_conda }}" install -n {{ arcgis_env_ma }} --yes geopandas'
+      args:
+        creates: '{{ arcgis_base }}\\bin\\Python\\envs\\{{ arcgis_env_ma }}\\Lib\\site-packages\\geopandas'
+
     - name: Install QGIS geospatial editor 
       chocolatey.chocolatey.win_chocolatey:
         name: qgis-ltr
