@@ -31,7 +31,7 @@ Against provisioning project
 - [x] can ping a laptop via Ansible ~~based on this static address~~
 - [x] can run a simple task within an Ansible playbook (creating a text file on the desktop)
 - [x] can install simple software such as ~~VLC~~ VS Code
-- [ ] can install more complex software such as ArcGIS Pro with the MA toolbar
+- [x] can install more complex software such as ArcGIS Pro with the MA toolbar
 
 > [!NOTE]
 >
@@ -47,10 +47,15 @@ Additional progress:
 - [x] automated patching OpenSSH config to enable admin users to use password auth
 - software as per https://mapaction.atlassian.net/wiki/spaces/techcircle/database/17848893459:
   - Windows (implicit)
-  - [ ] ArcPro [3.4.2]
+  - [x] .Net desktop runtime [8.x]
+    - [x] ArcPro [3.4.0]
+      - [x] ArcPro [3.4.1]
+      - [x] ArcPro [3.4.2]
+      - [x] MapAction Toolbar
+      - [x] GeoPandas python dependency for 3W process
   - [x] QGIS [3.44]
   - [x] Adobe Reader
-  - [ ] Google Chrome - disabled, checksum error on install
+  - [ ] Google Chrome *skipped, checksum error on install*
   - [x] Firefox
   - [x] PDFsam
   - [x] NextCloud Client
@@ -60,16 +65,14 @@ Additional progress:
   - [x] Google Earth Pro
   - [x] NotePad++
   - [x] VS Code
-  - [ ] (.Net 8)
   - [x] Google Drive
   - [x] WinDirStat
   - [x] InkScape
   - [x] GIMP
   - [x] Power BI Desktop
-  - [ ] MS Office
-  - [ ] MapAction Toolbar
-  - [ ] Python - skipped to clarify need
-  - [ ] MS Teams
+  - [ ] MS Office *Skipped as not sure which version*
+  - [ ] Python *skipped to clarify need*
+  - [x] MS Teams
   - [x] Signal
 - fonts as per ...
   - [ ] OCHA Humanitarian Icons
@@ -78,13 +81,19 @@ Additional progress:
 - other as per ...
   - [ ] printer drivers
 
+Questions:
+
+- how do we handle Office?
+- how do we handle Arc licensing? (named user or single use?)
+- how were things like the D drive partition handled? (is this still needed?)
+
 ## Usage
 
 ### Overview
 
 1. install Windows with a conventional MapAction admin user account (first run only)
 2. enable SSH access for Ansible to connect to machine (first run only)
-3. rin Ansible playbook to install software
+3. run Ansible playbook to install and configure software
 
 ### Setup Windows
 
@@ -123,11 +132,21 @@ Configure a machine with Windows installed for access by Ansible:
 ```
 
 > [!NOTE]
-> Running the playbook is not quick!
+> Running the playbook is not quick where Arc needs to be installed!
 
 ## Implementation
 
 ...
+
+ArcGIS installer kept in case reinstallation needed
+
+...
+
+Uploading large files to R2:
+
+```shell
+% AWS_ACCESS_KEY_ID=xxx AWS_SECRET_ACCESS_KEY=xxx aws s3 cp ~/Downloads/xxx.exe s3://mapaction-laptop-assets/software/foo/1.2.3/ --endpoint-url https://a8f7784516857bf5334a1fd14e92c7e2.r2.cloudflarestorage.com --region auto
+```
 
 ## Setup
 
@@ -136,6 +155,7 @@ I.e. Setup needed to run this project, on a machine Ansible will be run from.
 1. setup project [1]
 2. amend `inventory.yml` to reflect target laptops (i.e. update `MA-LAPTOP60` to reflect the laptop(s) you have available)
 3. set `ansible_password` in `inventory.yml` to the conventional MapAction password
+4. set `software_packages_endpoint` in `playbook.yml` to a web server hosting required software and other packages
 
 [1]
 
