@@ -164,6 +164,10 @@
       chocolatey.chocolatey.win_chocolatey:
         name: powerbi
         state: present
+    - name: Install Microsoft Teams messenger
+      chocolatey.chocolatey.win_chocolatey:
+        name: microsoft-teams-new-bootstrapper
+        state: present
     - name: Install Signal messenger
       chocolatey.chocolatey.win_chocolatey:
         name: signal
