@@ -1,20 +1,29 @@
-Write-Host "Ensuring OpenSSH server capability is installed"
-$cap = Get-WindowsCapability -Online -Name OpenSSH.Server* -ErrorAction SilentlyContinue
-if ($cap -and $cap.State -ne 'Installed') {
-    Add-WindowsCapability -Online -Name $cap.Name
+Write-Host "Ensuring OpenSSH server is installed"
+if ([bool](Get-Service -Name sshd -ErrorAction SilentlyContinue)) {
+    Write-Verbose "OpenSSH is already installed." -Verbose
 }
+else {
+    Write-Verbose "Installing OpenSSH..." -Verbose
+    $openSSHpackages = Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Server*' | Select-Object -ExpandProperty Name
 
-Write-Host "Ensuring OpenSSH service exists and is set to automatic"
-if (Get-Service -Name sshd -ErrorAction SilentlyContinue) {
-    Set-Service -Name sshd -StartupType Automatic
-}
+    foreach ($package in $openSSHpackages) {
+        Add-WindowsCapability -Online -Name $package
+    }
 
-Write-Host "Ensuring OpenSSH firewall rule exists and is enabled."
-$rule = Get-NetFirewallRule -Name 'sshd' -ErrorAction SilentlyContinue
-if (-not $rule) {
-    New-NetFirewallRule -Name 'sshd' -DisplayName 'OpenSSH Server (sshd)' -Action Allow -Direction Inbound -Enabled True -Profile Domain,Private -Protocol TCP -LocalPort 22
-} else {
-    Set-NetFirewallRule -Name 'sshd' -Profile Domain,Private -Enabled True -Action Allow -Direction Inbound
+    # Start the sshd service
+    Write-Verbose "Starting OpenSSH service..." -Verbose
+    Start-Service sshd
+    Set-Service -Name sshd -StartupType 'Automatic'
+
+    # Confirm the Firewall rule is configured. It should be created automatically by setup. Run the following to verify
+    Write-Verbose "Confirm the Firewall rule is configured..." -Verbose
+    if (!(Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyContinue | Select-Object Name, Enabled)) {
+        Write-Output "Firewall Rule 'OpenSSH-Server-In-TCP' does not exist, creating it..."
+        New-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -DisplayName 'OpenSSH Server (sshd)' -Enabled True -Direction Inbound -Protocol TCP -Profile Domain,Private -Action Allow -LocalPort 22
+    }
+    else {
+        Write-Output "Firewall rule 'OpenSSH-Server-In-TCP' already exists."
+    }
 }
 
 Write-Host "Ensuring OpenSSH is configured to allow password authentication for admin users"
@@ -43,7 +52,7 @@ if (Test-Path $sshdConfig) {
         Write-Host "No changes needed in $sshdConfig"
     }
 } else {
-    Write-Host "sshd_config not found at $sshdConfig"
+    Write-Host "sshd_config not found at $sshdConfig. This is temperamental, re-running the script usually fixes issue."
 }
 
 Write-Host "Ensuring OpenSSH service is running"
