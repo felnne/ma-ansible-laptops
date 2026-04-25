@@ -103,8 +103,7 @@
       win_command: '"{{ arcgis_conda }}" install -n {{ arcgis_env_ma }} --yes geopandas'
       args:
         creates: '{{ arcgis_base }}\\bin\\Python\\envs\\{{ arcgis_env_ma }}\\Lib\\site-packages\\geopandas'
-
-    - name: Install QGIS geospatial editor 
+    - name: Install QGIS geospatial editor (slow) 
       chocolatey.chocolatey.win_chocolatey:
         name: qgis-ltr
         state: present
@@ -170,7 +169,7 @@
       chocolatey.chocolatey.win_chocolatey:
         name: gimp
         state: present
-    - name: Install PowerBI editor
+    - name: Install PowerBI dashboards editor
       chocolatey.chocolatey.win_chocolatey:
         name: powerbi
         state: present
