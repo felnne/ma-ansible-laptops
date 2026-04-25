@@ -113,10 +113,11 @@
       chocolatey.chocolatey.win_chocolatey:
         name: adobereader
         state: present
-    # - name: Install Chrome web browser
-    #   chocolatey.chocolatey.win_chocolatey:
-    #     name: googleChrome
-    #     state: present
+    - name: Install Chrome web browser
+      chocolatey.chocolatey.win_chocolatey:
+        name: googleChrome
+        ignore_checksums: true
+        state: present
     - name: Install Firefox web browser
       chocolatey.chocolatey.win_chocolatey:
         name: Firefox
