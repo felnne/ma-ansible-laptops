@@ -55,7 +55,7 @@ Additional progress:
       - [x] GeoPandas python dependency for 3W process
   - [x] QGIS [3.44]
   - [x] Adobe Reader
-  - [ ] Google Chrome *skipped, checksum error on install*
+  - [x] Google Chrome (checksum skipped due to error)
   - [x] Firefox
   - [x] PDFsam
   - [x] NextCloud Client
@@ -74,18 +74,16 @@ Additional progress:
   - [ ] Python *skipped to clarify need*
   - [x] MS Teams
   - [x] Signal
-- fonts as per ...
-  - [ ] OCHA Humanitarian Icons
-  - [ ] Roboto
-  - [ ] FontAwesome
-- other as per ...
-  - [ ] printer drivers
+- fonts as per https://mapaction.atlassian.net/wiki/spaces/techcircle/pages/11255643866/Mission+Software+Requirements:
+  - [x] OCHA Humanitarian Icons
+  - [x] Roboto
 
 Questions:
 
-- how do we handle Office?
+- how do we handle Office install and licensing?
 - how do we handle Arc licensing? (named user or single use?)
 - how were things like the D drive partition handled? (is this still needed?)
+- how are things like printer drivers handled?
 
 ## Usage
 
@@ -97,19 +95,39 @@ Questions:
 
 ### Setup Windows
 
+> [!CAUTION]
+> This will remove all data on the laptop.
+
 > [!NOTE]
 >
 > These steps were developed using an existing MA configured laptop 
 > [Reset](https://support.microsoft.com/en-us/windows/reset-your-pc-0ef73740-b927-549b-b7c9-e6f2b48d275e) to its 
 > original state. 
 >
-> Whilst this is not the same as a full reinstallation, it's good enough for this demonstration.
+> Whilst this is not the same as a full reinstallation, it's good enough for this demonstration (and probably generally?).
 
-Configure a machine to run Windows:
+Reset an existing Windows 11 installation:
 
-1. install Windows 11
-2. when asked, name the machine based on its assigned label (e.g. `MA-LAPTOP60`)
-3. when asked, create a `Mapaction` local account (choose work computer and domain joined)
+- from *Settings* -> *System* -> *Recovery* -> *Reset PC*
+- choose *Remove Everything*, then *Cloud Download*, then *Next*, then *Reset*
+- the laptop will download installation files and automatically restart, then reset, restart and install updates
+- once reset and updated (after several more possible restarts), the laptop will enter Windows setup
+- choose *United Kingdom* as the country/region and keyboard layout (skip additional)
+- connect to a relevant network (not public)
+- accept the licence agreement
+- name the device based on its asset label (e.g. `MA-LAPTOP60`)
+- the laptop will restart and re-enter setup
+- choose *Setup for work or school*
+- choose *Sign-in options* when asked to sign in, then *Domain join instead*
+- use `Mapaction` as the name of the local account
+- give any answer for the required security questions
+- skip biometrics setup
+- *opt-in* to location services
+- *opt-out* of find my device
+- send *required only* diagnostic data sharing
+- *opt-out* of improving inking and typing
+- choose *No* to personalised offers
+- Windows will create a profile and sign in
 
 ### Bootstrap Windows
 
@@ -117,11 +135,15 @@ Configure a machine with Windows installed for access by Ansible:
 
 1. copy the `bootstrap.ps1` PowerShell script to the desktop
 2. run the script from a privileged PowerShell session [1]
+3. ensure the network profile is set to *private* not *public* (providing you are on a trusted network)
+
+> [!NOTE]
+> Checking the SSH server config file exists is temperamental. You may need to run the bootstrap script again if it fails.
 
 [1]
 
 ```shell
-> Set-ExecutionPolicy Bypass -File C:\Users\Mapaction\Desktop\bootstrap.ps1
+> powershell.exe -ExecutionPolicy Bypass -File C:\Users\Mapaction\Desktop\bootstrap.ps1
 ```
 
 ### Run Ansible provisioning
@@ -132,25 +154,107 @@ Configure a machine with Windows installed for access by Ansible:
 ```
 
 > [!NOTE]
-> Running the playbook is not quick where Arc needs to be installed!
+> Running the playbook takes around 40 minutes on an unprovisioned machine.
 
 ## Implementation
 
-...
+An Ansible playbook `playbook.yml` is used to to configure a laptop for use.
 
-ArcGIS installer kept in case reinstallation needed
+A local provisioning folder `C:\MA_PROVISIONING` is created for storing copies of hosted packages.
 
-...
+PowerShell helper scripts in `files\` are used for some tasks (such as font installation)
 
-Uploading large files to R2:
+### Software tasks
 
-```shell
-% AWS_ACCESS_KEY_ID=xxx AWS_SECRET_ACCESS_KEY=xxx aws s3 cp ~/Downloads/xxx.exe s3://mapaction-laptop-assets/software/foo/1.2.3/ --endpoint-url https://a8f7784516857bf5334a1fd14e92c7e2.r2.cloudflarestorage.com --region auto
-```
+Chocolately is used to install applications except those related to ArcGIS Pro. 
+
+All installations straightforward.
+
+> [!TIP]
+> Chocolately itself is installed implicitly when first called.
+
+> [!NOTE]
+> The Chocolately install cache, and ArcGIS installers, are kept for manual reinstallation if needed.
+
+#### ArcGIS Pro
+
+The ArcGIS installer is downloaded from the packages web server and extracted to the local provisioning folder.
+
+The MSI package is run in silent mode, with arguments to:
+
+- install system wide
+- include the semantic search and tool suggestion local AI features
+- allow unsigned add-ins (for the MapAction toolbar) SemanticSearch,ToolSuggestions
+- prevent in-app updates (to ensure compatibility with the MapAction toolbar)
+
+Post installation:
+
+- required patches are installed (as MSI packages)
+- an ArcGIS Pro add-ins folder is created within the local provisioning folder
+- this folder is configured as an add-ins search path via the registry
+- the default Conda environment is cloned, and made active within Pro, to allow installing additional packages
+
+#### MapAction toolbar for ArcGIS Pro
+
+The MapAction toolbar ArcGISPro add-in file is download from the packages web server to the pre-created add-ins
+folder. The add-in should be picked up and used within Pro automatically.
+
+#### ArcGIS Pro Conda
+
+The [GeoPandas](https://geopandas.org/en/stable/) Python package is installed into a non-default ArcGIS Pro Conda 
+environment for running the 
+[W3 notebook](https://mapaction.atlassian.net/wiki/spaces/GP/pages/16447995905/3W_4W+Jupyter+Notebook+JN).
+
+### Font tasks
+
+Fonts are downloaded from the packages web server and stored in the local provisioning folder.
+
+Fonts are installed system wide via a helper script.
 
 ## Setup
 
-I.e. Setup needed to run this project, on a machine Ansible will be run from.
+### Package hosting
+
+Setup needed for hosting software and other packages:
+
+1. create a [Cloudflare R2](https://developers.cloudflare.com/r2/get-started/) bucket
+2. upload required software and packages [1]
+3. enable the public development URL
+4. use this URL as the `software_packages_endpoint` variable in Ansible
+
+> [!TIP]
+> To upload large files via the command line, use the S3 CLI with Cloudflare as a custom endpoint:
+>
+> ```shell
+> % AWS_ACCESS_KEY_ID=xxx AWS_SECRET_ACCESS_KEY=xxx aws s3 cp ~/Downloads/foo.exe s3://$bucket/.../ --endpoint-url https://$account.r2.cloudflarestorage.com --region auto
+> ```
+>
+> Where: `$account` is the Cloudflare account ID, `$bucket` is the R2 bucket name and `xxx` are bucket credentials.
+
+E.g.
+
+```shell
+% AWS_ACCESS_KEY_ID=xxx AWS_SECRET_ACCESS_KEY=xxx aws s3 cp  ~/Downloads/ArcGISPro_34_192912.exe s3://mapaction-laptop-assets/software/arcgis-pro/3.4.2/ --endpoint-url https://a8f7784516857bf5334a1fd14e92c7e2.r2.cloudflarestorage.com --region auto
+```
+
+[1]
+
+- ArcGIS Pro 3.4.0 installer
+  - from MyEsri
+- ArcGIS Pro 3.4.1 patch
+  - from MyEsri
+- ArcGIS Pro 3.4.2 patch
+  - from MyEsri
+- MapAction toolbar for ArcGIS Pro 3.4.2.5
+  - from https://drive.google.com/drive/folders/1N3kUqPWmpcjSJSc8mJECQwCTtMVEF_ZA
+- Roboto font
+  - from https://fonts.google.com/specimen/Roboto
+- Humanitarian Icons font
+  - from https://github.com/mapaction/ocha-humanitarian-icons-for-gis 
+
+### Ansible control node setup
+
+Setup needed to run Ansible:
 
 1. setup project [1]
 2. amend `inventory.yml` to reflect target laptops (i.e. update `MA-LAPTOP60` to reflect the laptop(s) you have available)
