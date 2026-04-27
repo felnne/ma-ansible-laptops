@@ -263,12 +263,64 @@ Setup needed to run Ansible:
 
 [1]
 
+For macOS:
+
 ```shell
 % brew install uv git
 % git clone https://github.com/felnne/ma-ansible-laptops.git
 % cd ma-ansible-laptops/
 % uv sync
 ```
+
+For Windows Subsystem for Linux:
+
+> [!NOTE]
+> Ansible cannot be run from a Windows machine directly.
+
+```shell
+> wsl --install
+# reboot
+> wsl --install ubuntu
+# set account information
+$ cd ~
+$ curl -LsSf https://astral.sh/uv/install.sh | sh
+$ git clone https://github.com/felnne/ma-ansible-laptops.git
+$ cd ma-ansible-laptops/
+$ uv sync
+```
+
+### Azure VMs
+
+> [!WARNING]
+> This section is Work in Progress (WIP) and may not be complete/accurate.
+
+Setup needed to create disposable VMs as Ansible targets:
+
+1. sign up for Azure and enable PAYG billing
+2. *Home* -> *Create a Resource* -> *Virtual Machines*:
+  - Environment: *Dev/Test*
+  - Type: *D*
+  - Resource group: `ma-laptop-provisioning`
+  - Name: `MA-LAPTOP-Vxx`
+  - Region: *UK (South)*
+  - Zone: *Azure selected*
+  - Image: *Windows 11 Pro*
+  - Spot discount: *True*
+  - Eviction policy: *Delete*
+  - Size: *D2*
+  - Username: `Mapaction`
+  - Password: (Random)
+  - Inbound ports: *3389*, *22* (RDP, SSH)
+  - Disks: (accept defaults)
+  - Network: (accept defaults, except enable 'Delete public IP and NIC when VM is deleted')
+  - Management: (skip)
+  - Monitoring: (accept defaults, except disable Boot diagnostics)
+  - Advanced (skip)
+  - Tags: (skip)
+3. when provisioned, go to *VM* -> *Primary NIC public IP* -> *associated public IPs* -> *x.x.x.x*
+4. from public IP -> *Settings* -> *Configuration*:
+  - DNS name label: `$hostname` (e.g. `ma-laptop-v02.uksouth.cloudapp.azure.com`)
+5. RDP into VM and follow [Bootstrap Windows](#bootstrap-windows), inc. setting network as private
 
 ## Troubleshooting
 
@@ -290,13 +342,15 @@ Checks Ansible can connect to all machines in the *laptops* inventory group via 
 ### Troubleshoot SSH
 
 ```shell
-% ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no -vvvv Mapaction@192.168.122.141
+% ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no -vvvv Mapaction@x.x.x.x
 ```
 
 Verifies network connectivity, SSH service and authentication.
 
+If you see `Operation timed out`, check `sshd` Windows service is running.
+
 > [!NOTE]
-> Replace `192.168.122.141` with an IP or DHCP hostname.
+> Replace `x.x.x.x` with an IP or DHCP hostname.
 
 > [!TIP]
 > `-o PreferredAuthentications=password` and `-o PubkeyAuthentication=no` options are set to guard against any public
@@ -304,13 +358,25 @@ Verifies network connectivity, SSH service and authentication.
 >
 > Depending on the SSH config of your control machine, this may not be necessary (but won't hurt).
 
-### Troubleshoot Windows Firewall
+### Troubleshoot Windows ping
+
+```shell
+# enable ping responses
+> Enable-NetFirewallRule -DisplayName "File and Printer Sharing (Echo Request - ICMPv4-In)"
+# disable ping responses
+> Disable-NetFirewallRule -DisplayName "File and Printer Sharing (Echo Request - ICMPv4-In)"
+```
+
+> [!TIP]
+> It's best practice to not leave ping relies enabled.
+
+### Troubleshoot Windows firewall
 
 ```shell
 # disable firewall
-Set-NetFirewallProfile -All -Enabled False
+> Set-NetFirewallProfile -All -Enabled False
 # enable firewall
-Set-NetFirewallProfile -All -Enabled True
+> Set-NetFirewallProfile -All -Enabled True
 ```
 
 > [!WARNING]

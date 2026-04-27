@@ -36,6 +36,8 @@
 - in-place upgrades (from fixed profile to fixed profile - e.g. MA-2026-01-20 to MA-2026-04-02, etc.)
 - get packages from Google Drive (auth?)?
 - e2e test for the toolbar
+- enable WSL by default?
+- bundle actual Ansible config used for local use via WSL? (probably won't work fully offline)
 
 20:20 - 21:02
 
