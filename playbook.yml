@@ -19,6 +19,8 @@
     arcgis_env_base: "arcgispro-py3"
     arcgis_env_ma: "mapaction-arc-py3"
 
+    office_key: "xxx"
+
     fonts_base: "{{ provisioning_base }}\\Fonts"
     font_installer: "{{ provisioning_scripts }}\\install-font.ps1"
 
@@ -27,22 +29,38 @@
       win_file:
         path: "{{ provisioning_scripts }}"
         state: directory
+    - name: Install Microsoft Office productivity suite (slow)
+      chocolatey.chocolatey.win_chocolatey:
+        name: office2019proplus
+        package_params: "/Language=en-us"
+        state: present
+    - name: Check current Office product key
+      win_shell: cscript "C:\Program Files\Microsoft Office\Office16\OSPP.VBS" /dstatus
+      register: office_dstatus
+      changed_when: false
+    - name: Remove default Office product key
+      win_shell: >
+        cscript "C:\Program Files\Microsoft Office\Office16\OSPP.VBS"
+        /unpkey:{{ office_dstatus.stdout | regex_search('Last 5 characters of installed product key: (\w{5})', '\1') | first }}
+      when:
+        - office_key[-5:] not in office_dstatus.stdout
+    - name: Set Office product key
+      win_shell: cscript "C:\Program Files\Microsoft Office\Office16\OSPP.VBS" /inpkey:{{ office_key }}
+      when: office_key[-5:] not in office_dstatus.stdout
 
     - name: Install .Net desktop runtime for ArcGIS Pro
       chocolatey.chocolatey.win_chocolatey:
         name: dotnet-8.0-desktopruntime
         state: present
     - name: Create ArcGIS Pro install directory
-      win_file:
-        path: "{{ arcgis_store }}"
+      win_file:        path: "{{ arcgis_store }}"
         state: directory
     - name: Download ArcGIS Pro installer (slow)
       win_get_url:
         url: "{{ software_packages_endpoint }}/software/arcgis-pro/3.4.2/ArcGISPro_34_192912.exe"
         dest: "{{ arcgis_exe }}"
         checksum: "228fba5c8b82aafdd2444b0cfc48a51aaa6cb7b7"
-        force: false
-    - name: Extract ArcGIS Pro installer
+        force: false    - name: Extract ArcGIS Pro installer
       win_command: '{{ arcgis_exe }} /s /d {{ arcgis_store }}'
       args:
         creates: '{{ arcgis_msi }}'
