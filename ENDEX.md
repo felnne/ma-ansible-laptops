@@ -28,7 +28,7 @@
 - document lifecycle (format -> bootstrap -> provision -> use -> reformat)
 - Map Export plugin for QGIS and other requirements from https://mapaction.atlassian.net/wiki/spaces/techcircle/pages/11255643866/Mission+Software+Requirements#QGIS-Environment-Components
 - use custom PS module for font install
-- add README to MA_PROVISIONING directory
+- add a README to MA_PROVISIONING directory
 - review https://github.com/AlexNabokikh/windows-playbook
 - review https://rys.pw/books/wiki/page/windows#bkmrk-post-install-script
 - humanitarian icons QGIS and ArcPro styles
@@ -37,9 +37,21 @@
 - get packages from Google Drive (auth?)?
 - e2e test for the toolbar
 - enable WSL by default?
+  - seems to mess with SSH service (keeps becoming stopped) so maybe not
 - bundle actual Ansible config used for local use via WSL? (probably won't work fully offline)
-
-20:20 - 21:02
+- cleanup bootstrap script if saved to the desktop
+- developer profile (things like WSL, HyperV Docker, etc.)
+- Office version is unsupported
+- Office `en-gb` locale
+- figure out MS Access Database Engine (and a test to ensure it's working)
+- change `C:\MA_PROVISIONING\Font`\ to `C:\MA_PROVISIONING\fonts` (lowercase)
+- move `C:\MA_PROVISIONING\ArcGISPro` to `C:\MA_PROVISIONING\software\ArcGISPro` (namespaced under software)
+- Windows unattended setup? https://schneegans.de/windows/unattend-generator
+- store laptop number as asset tag in UEFI?
+- formalise Azure test VMs, Terraform?
+- how do we handle Arc licensing? (named user or single use?)
+- how were things like the D drive partition handled? (is this still needed?)
+- how are things like printer drivers handled?
 
 From https://mapaction.atlassian.net/wiki/spaces/techcircle/database/17848893459:
 

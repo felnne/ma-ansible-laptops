@@ -25,7 +25,7 @@ Ansible generally works.
 Against provisioning project 
 [Milestones](https://mapaction.atlassian.net/wiki/spaces/missions/pages/18013814785/2026-Global-Server-Status-and-Laptop-Provisioning-Current-Status-Milestones#Milestones):
 
-- [ ] can install Windows via standard installer and minimally configure
+- ~~can install Windows via standard installer and minimally configure~~
 - ~~can register a static DHCP reservation for laptop within the office server~~
 - ~~can ping a laptop based on this static address~~
 - [x] can ping a laptop via Ansible ~~based on this static address~~
@@ -36,8 +36,10 @@ Against provisioning project
 > [!NOTE]
 >
 > In this demonstration/experiment, a single laptop is targeted without a network using DHCP registration.
+> Consequently, the DHCP and static address elements of the provisioning project milestones are ignored/untested.
 >
-> Consequently, the DHCP and static address elements of the provisioning project milestones are ignored.
+> Additionally, in-place Windows resets were used instead of full re-installations. This milestone is therefore also 
+> ignored/untested. 
 
 Additional progress:
 
@@ -70,20 +72,13 @@ Additional progress:
   - [x] InkScape
   - [x] GIMP
   - [x] Power BI Desktop
-  - [ ] MS Office *Skipped as not sure which version*
-  - [ ] Python *skipped to clarify need*
+  - [x] MS Office
+  - Python *skipped to clarify need*
   - [x] MS Teams
   - [x] Signal
 - fonts as per https://mapaction.atlassian.net/wiki/spaces/techcircle/pages/11255643866/Mission+Software+Requirements:
   - [x] OCHA Humanitarian Icons
   - [x] Roboto
-
-Questions:
-
-- how do we handle Office install and licensing?
-- how do we handle Arc licensing? (named user or single use?)
-- how were things like the D drive partition handled? (is this still needed?)
-- how are things like printer drivers handled?
 
 ## Usage
 
@@ -166,15 +161,10 @@ PowerShell helper scripts in `files\` are used for some tasks (such as font inst
 
 ### Software tasks
 
-Chocolately is used to install applications except those related to ArcGIS Pro. 
-
-All installations straightforward.
-
-> [!TIP]
-> Chocolately itself is installed implicitly when first called.
+Chocolately is used to install applications except ArcGIS Pro and Microsoft Office.
 
 > [!NOTE]
-> The Chocolately install cache, and ArcGIS installers, are kept for manual reinstallation if needed.
+> For troubleshooting, the Chocolately install cache is available at `%TEMP%\chocolatey`.
 
 #### ArcGIS Pro
 
@@ -187,6 +177,9 @@ The MSI package is run in silent mode, with arguments to:
 - allow unsigned add-ins (for the MapAction toolbar) SemanticSearch,ToolSuggestions
 - prevent in-app updates (to ensure compatibility with the MapAction toolbar)
 
+> [!TIP]
+> The ArcGIS installer is kept for manual reinstallation if needed given it's size.
+
 Post installation:
 
 - required patches are installed (as MSI packages)
@@ -194,7 +187,7 @@ Post installation:
 - this folder is configured as an add-ins search path via the registry
 - the default Conda environment is cloned, and made active within Pro, to allow installing additional packages
 
-#### MapAction toolbar for ArcGIS Pro
+#### ArcGIS Pro MapAction toolbar
 
 The MapAction toolbar ArcGISPro add-in file is download from the packages web server to the pre-created add-ins
 folder. The add-in should be picked up and used within Pro automatically.
@@ -204,6 +197,23 @@ folder. The add-in should be picked up and used within Pro automatically.
 The [GeoPandas](https://geopandas.org/en/stable/) Python package is installed into a non-default ArcGIS Pro Conda 
 environment for running the 
 [W3 notebook](https://mapaction.atlassian.net/wiki/spaces/GP/pages/16447995905/3W_4W+Jupyter+Notebook+JN).
+
+#### Microsoft Office
+
+A default Office 2019 installation is performed, with limitations:
+
+- an `en-gb` (UK English) language pack no longer seems to be available
+- a configuration file generated with [Microsoft's tool](https://config.office.com/deploymentsettings) is not used if
+  specified
+
+As workarounds:
+
+- `en-us` is used as an explicit language pack
+- the Office product key is updated after installation using some additional commands
+
+> [!NOTE]
+> The lack of a UK language pack, and installing other languages (French and Spanish) is not ideal, but as Office 2019 
+> is no longer supported, no further work to resolve this is planned.
 
 ### Font tasks
 
@@ -260,6 +270,7 @@ Setup needed to run Ansible:
 2. amend `inventory.yml` to reflect target laptops (i.e. update `MA-LAPTOP60` to reflect the laptop(s) you have available)
 3. set `ansible_password` in `inventory.yml` to the conventional MapAction password
 4. set `software_packages_endpoint` in `playbook.yml` to a web server hosting required software and other packages
+5. set `office_key` in `playbook.yml` to a valid Office 2019 professional plus volume licence product key
 
 [1]
 
@@ -317,8 +328,7 @@ Setup needed to create disposable VMs as Ansible targets:
   - Monitoring: (accept defaults, except disable Boot diagnostics)
   - Advanced (skip)
   - Tags: (skip)
-3. when provisioned, go to *VM* -> *Primary NIC public IP* -> *associated public IPs* -> *x.x.x.x*
-4. from public IP -> *Settings* -> *Configuration*:
+3. when provisioned, go to *VM* -> *Primary NIC public IP* -> *associated public IPs* -> *x.x.x.x* -> *Settings* -> *Configuration*:
   - DNS name label: `$hostname` (e.g. `ma-laptop-v02.uksouth.cloudapp.azure.com`)
 5. RDP into VM and follow [Bootstrap Windows](#bootstrap-windows), inc. setting network as private
 
