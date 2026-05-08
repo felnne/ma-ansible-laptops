@@ -8,7 +8,7 @@
 
     arcgis_store: "{{ provisioning_base }}\\ArcGISPro"
     arcgis_exe: "{{ arcgis_store }}\\installer.exe"
-    arcgis_msi: '{{ arcgis_store }}\ArcGIS Pro 3.4\ArcGISPro\ArcGISPro.msi'
+    arcgis_msi: "{{ arcgis_store }}\\ArcGIS Pro 3.4\\ArcGISPro\\ArcGISPro.msi"
     arcgis_patch_1: "ArcGIS_Pro_341_192917.msp"
     arcgis_patch_2: "ArcGIS_Pro_342_192916.msp"
     arcgis_toolbar: "MapActionToolbars_3_4_2_5.esriAddinX"
@@ -29,6 +29,11 @@
       win_file:
         path: "{{ provisioning_scripts }}"
         state: directory
+    - name: Install Chocolatey package manager
+      chocolatey.chocolatey.win_chocolatey:
+        name: chocolatey
+        state: present
+
     - name: Install Microsoft Office productivity suite (slow)
       chocolatey.chocolatey.win_chocolatey:
         name: office2019proplus
@@ -53,14 +58,16 @@
         name: dotnet-8.0-desktopruntime
         state: present
     - name: Create ArcGIS Pro install directory
-      win_file:        path: "{{ arcgis_store }}"
+      win_file:
+        path: "{{ arcgis_store }}"
         state: directory
     - name: Download ArcGIS Pro installer (slow)
       win_get_url:
         url: "{{ software_packages_endpoint }}/software/arcgis-pro/3.4.2/ArcGISPro_34_192912.exe"
         dest: "{{ arcgis_exe }}"
         checksum: "228fba5c8b82aafdd2444b0cfc48a51aaa6cb7b7"
-        force: false    - name: Extract ArcGIS Pro installer
+        force: false
+    - name: Extract ArcGIS Pro installer
       win_command: '{{ arcgis_exe }} /s /d {{ arcgis_store }}'
       args:
         creates: '{{ arcgis_msi }}'
@@ -174,6 +181,7 @@
     - name: Install Google Drive file sync client
       chocolatey.chocolatey.win_chocolatey:
         name: googledrive
+        ignore_checksums: true
         state: present
     - name: Install WinDirStat disk usage analyser
       chocolatey.chocolatey.win_chocolatey:
@@ -190,6 +198,7 @@
     - name: Install PowerBI dashboards editor
       chocolatey.chocolatey.win_chocolatey:
         name: powerbi
+        ignore_checksums: true
         state: present
     - name: Install Microsoft Teams messenger
       chocolatey.chocolatey.win_chocolatey:
@@ -204,7 +213,7 @@
       win_copy:
         src: "files/install-font.ps1"
         dest: "{{ font_installer }}"
-    - name: Create fonts directory
+    - name: Create provisioning fonts directory
       win_file:
         path: "{{ fonts_base }}"
         state: directory
